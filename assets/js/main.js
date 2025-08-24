@@ -32,7 +32,12 @@ function setupEventListeners() {
 
   elements.inputs.forEach((input) => {
     input.addEventListener('input', () => {
-      input.classList.remove('is-invalid', 'is-valid');
+      input.classList.remove('is-invalid');
+      if (validateProductForm()) {
+        input.classList.add('is-valid');
+      } else {
+        input.classList.remove('is-valid');
+      }
     });
   });
 }
