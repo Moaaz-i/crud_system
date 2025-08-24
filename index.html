@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="assets/css/all.min.css" />
+  </head>
+  <body>
+    <section id="productForm" class="bg-info w-75 mx-auto mt-5 p-3 rounded-3">
+      <h2 class="text-center my-4">Crud Operations</h2>
+
+      <div class="form-floating mb-3">
+        <input
+          type="text"
+          class="form-control"
+          id="productName"
+          placeholder=""
+        />
+        <label for="productName">Product Name</label>
+      </div>
+
+      <div class="form-floating mb-3">
+        <input
+          type="text"
+          class="form-control"
+          id="productPrice"
+          placeholder=""
+        />
+        <label for="productPrice">Product Price</label>
+      </div>
+
+      <div class="form-floating mb-3">
+        <input
+          type="text"
+          class="form-control"
+          id="productCategory"
+          placeholder=""
+        />
+        <label for="productCategory">Product Category</label>
+      </div>
+
+      <div class="form-floating mb-3">
+        <textarea
+          class="form-control"
+          id="productDescription"
+          placeholder=""
+          style="height: 100px;"
+        ></textarea>
+        <label for="productDescription">Product Description</label>
+      </div>
+
+      <div class="form-floating mb-3">
+        <input
+          type="file"
+          class="form-control"
+          id="productImage"
+          placeholder=""
+        />
+        <label for="productImage">Product Image</label>
+      </div>
+
+      <button class="btn btn-primary" type="submit" onclick="addProduct()"
+        >Add Product</button
+      >
+    </section>
+
+    <section class="my-3">
+      <div class="container">
+        <input
+          type="search"
+          class="form-control w-50 mx-auto my-3"
+          placeholder="Search..."
+        />
+        <div id="cards" class="row g-3"> </div>
+      </div>
+    </section>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
