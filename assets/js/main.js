@@ -14,8 +14,6 @@ function validateProductForm(inputs, productDescription) {
   const descriptionValid = /^.{0,200}$/;
   const imageValid = /[a-z]{3,30}.(jpg|jpeg|png|gif)$/i;
 
-  console.log(inputs[2].value);
-
   if (!nameValid.test(inputs[0].value)) {
     alert(
       'Name must be 3-16 characters and can only contain letters, numbers, underscores and hyphens'
