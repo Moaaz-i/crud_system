@@ -49,7 +49,7 @@ function validateProductForm(inputs, productDescription) {
 }
 
 function addProduct() {
-  validateProductForm(inputs, productDescription);
+  if (!validateProductForm(inputs, productDescription)) return false;
 
   var file = inputs[3].files[0];
   var reader = new FileReader();
