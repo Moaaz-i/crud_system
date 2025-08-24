@@ -1,5 +1,5 @@
 const elements = {
-  form: document.getElementById('productForm'),
+  btn_submit: document.querySelector('[type="submit"]'),
   inputs: document.querySelectorAll('#productForm input'),
   searchInput: document.getElementById('searchProduct'),
   description: document.getElementById('productDescription'),
@@ -26,8 +26,8 @@ function setupEventListeners() {
     );
   }
 
-  if (elements.form) {
-    elements.form.addEventListener('submit', handleSubmit);
+  if (elements.btn_submit) {
+    elements.btn_submit.addEventListener('click', handleSubmit);
   }
 
   elements.inputs.forEach((input) => {
@@ -152,7 +152,7 @@ function displayProducts() {
 
   const fragment = document.createDocumentFragment();
   const container = document.createElement('div');
-  container.className = 'row';
+  container.className = 'row g-3 mt-3';
 
   products.forEach((product, index) => {
     const card = createProductCard(product, index);
@@ -166,41 +166,26 @@ function displayProducts() {
 
 function createProductCard(product, index) {
   return `
-        <div class="col-md-6 col-lg-4 col-xl-3 mb-3">
-            <div class="card h-100 shadow-sm">
-                ${
-                  product.image
-                    ? `
-                    <img src="${product.image}" alt="${product.name}" 
-                         class="card-img-top" style="height: 200px; object-fit: cover;">
-                `
-                    : ''
-                }
-                <div class="card-body">
-                    <span class="badge bg-info mb-2">#${index}</span>
-                    <h6 class="card-title">${product.name}</h6>
-                    <p class="card-text mb-1"><small>Price: $${product.price}</small></p>
-                    <p class="card-text mb-1"><small>Category: ${product.category}</small></p>
-                    ${
-                      product.description
-                        ? `
-                        <p class="card-text"><small>${truncateText(product.description, 50)}</small></p>
-                    `
-                        : ''
-                    }
-                </div>
-                <div class="card-footer bg-transparent border-0 pb-3">
-                    <div class="btn-group w-100">
-                        <button class="btn btn-outline-warning btn-sm" onclick="editProduct(${index})">
-                            <i class="fa-solid fa-edit"></i>
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="deleteProduct(${index})">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+      <div class="my-card col-md-6 col-lg-4 col-xl-3" data-index="${index}">
+        <div class="inner rounded-3 overflow-hidden shadow-lg">
+          ${product.image ? `<img src="${product.image}" alt="${product.name}" class="img-fluid w-100" style="height: 200px;"></img>` : null}
+          <div class="p-2">
+            <span class="badge bg-info text-white">Index: ${index}</span>
+            <h5>Product Name : ${product.name}</h5>
+            <p><strong>Price:</strong> $${product.price}</p>
+            <p><strong>Category:</strong> ${product.category}</p>
+            ${product.description ? `<p><strong>Description:</strong> ${truncateText(product.description, 16)}</p>` : ''}
+          </div>
+          <div class="border-top bg-body-tertiary p-2 d-flex justify-content-center gap-2">
+            <button class="btn btn-outline-warning btn-sm" onclick="editProduct(${index})">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
+            <button class="btn btn-outline-danger btn-sm" onclick="deleteProduct(${index})">
+              <i class="fa-solid fa-trash"></i> Delete
+            </button>
+          </div>
         </div>
+      </div>
     `;
 }
 
@@ -233,11 +218,13 @@ function deleteProduct(index) {
 
 function clearForm() {
   currentIndex = null;
-  elements.form.reset();
 
   elements.inputs.forEach((input) => {
     input.classList.remove('is-valid', 'is-invalid');
   });
+
+  elements.inputs.forEach((input) => (input.value = ''));
+  elements.description.value = '';
 
   elements.submitBtn.textContent = 'Add Product';
   elements.submitBtn.classList.replace('btn-warning', 'btn-primary');
@@ -274,7 +261,7 @@ function displayFilteredProducts(filteredProducts, query) {
 
   const fragment = document.createDocumentFragment();
   const container = document.createElement('div');
-  container.className = 'row';
+  container.className = 'row g-3 mt-3';
 
   filteredProducts.forEach((product, index) => {
     const card = createProductCard(product, index);
