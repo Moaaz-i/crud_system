@@ -1,72 +1,127 @@
-var inputs = document.querySelectorAll('#productForm input');
-var searchProductInput = document.getElementById('searchProduct');
-var productDescription = document.getElementById('productDescription');
-var cards = document.getElementById('cards');
-var products = loadFromLocalStorage();
-var currentIndex = null;
+const elements = {
+  form: document.getElementById('productForm'),
+  inputs: document.querySelectorAll('#productForm input'),
+  searchInput: document.getElementById('searchProduct'),
+  description: document.getElementById('productDescription'),
+  cards: document.getElementById('cards'),
+  message: document.getElementById('message') || createMessageElement(),
+  submitBtn: document.querySelector('button[type="submit"]'),
+};
 
-displayProducts();
+let products = loadFromLocalStorage();
+let currentIndex = null;
 
-function validateProductForm(inputs, productDescription) {
-  const nameValid = /^[a-zA-Z0-9_\-\s]{3,16}$/;
-  const priceValid = /^\d+(\.\d{1,2})?$/;
-  const categoryValid = /^[a-zA-Z\s]{3,20}$/;
-  const descriptionValid = /^.{0,200}$/;
-  const imageValid = /[a-z]{3,30}.(jpg|jpeg|png|gif)$/i;
+initApp();
 
-  if (!nameValid.test(inputs[0].value)) {
-    alert(
-      'Name must be 3-16 characters and can only contain letters, numbers, underscores and hyphens'
+function initApp() {
+  displayProducts();
+  setupEventListeners();
+}
+
+function setupEventListeners() {
+  if (elements.searchInput) {
+    elements.searchInput.addEventListener(
+      'input',
+      debounce(searchProducts, 300)
     );
-    return false;
   }
 
-  if (!priceValid.test(inputs[1].value)) {
-    alert('Price must be a valid number with up to 2 decimal places');
-    return false;
+  if (elements.form) {
+    elements.form.addEventListener('submit', handleSubmit);
   }
 
-  if (!categoryValid.test(inputs[2].value)) {
-    alert(
-      'Category must be 3-20 characters and can only contain letters and spaces'
+  elements.inputs.forEach((input) => {
+    input.addEventListener('input', () => {
+      input.classList.remove('is-invalid', 'is-valid');
+    });
+  });
+}
+
+function handleSubmit(e) {
+  e.preventDefault();
+  addProduct();
+}
+
+const validators = {
+  name: /^[\w\s-]{3,16}$/,
+  price: /^\d+(\.\d{1,2})?$/,
+  category: /^[a-zA-Z\s]{3,20}$/,
+  description: /^.{0,200}$/,
+  image: /\.(jpg|jpeg|png|gif)$/i,
+};
+
+function validateProductForm() {
+  let isValid = true;
+
+  if (!validators.name.test(elements.inputs[0].value.trim())) {
+    showError(
+      elements.inputs[0],
+      'Name must be 3-16 characters (letters, numbers, underscores, hyphens, spaces)'
     );
-    return false;
+    isValid = false;
   }
 
-  if (!inputs[3].files[0] || !imageValid.test(inputs[3].files[0].name)) {
-    alert('Please select a valid image file (JPG, JPEG, PNG, GIF)');
-    return false;
+  if (!validators.price.test(elements.inputs[1].value)) {
+    showError(
+      elements.inputs[1],
+      'Price must be a valid number with up to 2 decimal places'
+    );
+    isValid = false;
   }
 
-  if (!descriptionValid.test(productDescription.value)) {
-    alert('Description must be 200 characters or less');
-    return false;
+  if (!validators.category.test(elements.inputs[2].value.trim())) {
+    showError(
+      elements.inputs[2],
+      'Category must be 3-20 characters (letters and spaces only)'
+    );
+    isValid = false;
   }
 
-  return true;
+  const file = elements.inputs[3].files[0];
+  if (!file) {
+    showError(elements.inputs[3], 'Please select an image file');
+    isValid = false;
+  } else if (!validators.image.test(file.name)) {
+    showError(
+      elements.inputs[3],
+      'Please select a valid image (JPG, JPEG, PNG, GIF)'
+    );
+    isValid = false;
+  }
+
+  if (!validators.description.test(elements.description.value)) {
+    showError(
+      elements.description,
+      'Description must be 200 characters or less'
+    );
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+function showError(element, message) {
+  element.classList.add('is-invalid');
+  element.focus();
+  showMessage('warning', message);
 }
 
 function addProduct() {
-  if (!validateProductForm(inputs, productDescription)) return false;
+  if (!validateProductForm()) return false;
 
-  var file = inputs[3].files[0];
-  var reader = new FileReader();
+  const file = elements.inputs[3].files[0];
+  const reader = new FileReader();
 
   reader.onload = function (e) {
-    var product = {
-      name: inputs[0].value,
-      price: inputs[1].value,
-      category: inputs[2].value,
-      description: productDescription.value,
-      image: e.target.result,
-      fileName: file.name,
-    };
+    const product = createProductObject(e.target.result, file.name);
 
     if (currentIndex === null) {
       products.push(product);
+      showMessage('success', 'Product added successfully!');
     } else {
       products[currentIndex] = product;
       currentIndex = null;
+      showMessage('success', 'Product updated successfully!');
     }
 
     saveToLocalStorage();
@@ -77,51 +132,94 @@ function addProduct() {
   reader.readAsDataURL(file);
 }
 
-function displayProducts() {
-  var card;
-  cards.innerHTML = '';
+function createProductObject(imageData, fileName) {
+  return {
+    name: elements.inputs[0].value.trim(),
+    price: elements.inputs[1].value,
+    category: elements.inputs[2].value.trim(),
+    description: elements.description.value,
+    image: imageData,
+    fileName: fileName,
+    id: Date.now(),
+  };
+}
 
+function displayProducts() {
   if (products.length === 0) {
-    cards.innerHTML = '<p class="text-center">No products found</p>';
+    elements.cards.innerHTML = '<p class="text-center">No products found</p>';
     return;
   }
 
+  const fragment = document.createDocumentFragment();
+  const container = document.createElement('div');
+  container.className = 'row';
+
   products.forEach((product, index) => {
-    card = `
-      <div class="my-card col-md-6 col-lg-4 col-xl-3" data-index="${index}">
-        <div class="inner rounded-3 overflow-hidden shadow-lg">
-          ${product.image ? `<img src="${product.image}" alt="${product.name}" class="img-fluid w-100" style="height: 200px;"></img>` : null}
-          <div class="p-2">
-            <span class="badge bg-info text-white">Index: ${index}</span>
-            <h5>Product Name : ${product.name}</h5>
-            <p><strong>Price:</strong> $${product.price}</p>
-            <p><strong>Category:</strong> ${product.category}</p>
-            ${product.description ? `<p><strong>Description:</strong> ${product.description}</p>` : ''}
-          </div>
-          <div class="border-top bg-body-tertiary p-2 d-flex justify-content-center gap-2">
-            <button class="btn btn-outline-warning btn-sm" onclick="editProduct(${index})">
-              <i class="fa-solid fa-pen-to-square"></i> Edit
-            </button>
-            <button class="btn btn-outline-danger btn-sm" onclick="deleteProduct(${index})">
-              <i class="fa-solid fa-trash"></i> Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    cards.innerHTML += card;
+    const card = createProductCard(product, index);
+    container.innerHTML += card;
   });
+
+  fragment.appendChild(container);
+  elements.cards.innerHTML = '';
+  elements.cards.appendChild(fragment);
+}
+
+function createProductCard(product, index) {
+  return `
+        <div class="col-md-6 col-lg-4 col-xl-3 mb-3">
+            <div class="card h-100 shadow-sm">
+                ${
+                  product.image
+                    ? `
+                    <img src="${product.image}" alt="${product.name}" 
+                         class="card-img-top" style="height: 200px; object-fit: cover;">
+                `
+                    : ''
+                }
+                <div class="card-body">
+                    <span class="badge bg-info mb-2">#${index}</span>
+                    <h6 class="card-title">${product.name}</h6>
+                    <p class="card-text mb-1"><small>Price: $${product.price}</small></p>
+                    <p class="card-text mb-1"><small>Category: ${product.category}</small></p>
+                    ${
+                      product.description
+                        ? `
+                        <p class="card-text"><small>${truncateText(product.description, 50)}</small></p>
+                    `
+                        : ''
+                    }
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-warning btn-sm" onclick="editProduct(${index})">
+                            <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteProduct(${index})">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function truncateText(text, maxLength) {
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 }
 
 function editProduct(index) {
-  var product = products[index];
-  inputs[0].value = product.name;
-  inputs[1].value = product.price;
-  inputs[2].value = product.category;
-  productDescription.value = product.description;
+  const product = products[index];
+  elements.inputs[0].value = product.name;
+  elements.inputs[1].value = product.price;
+  elements.inputs[2].value = product.category;
+  elements.description.value = product.description;
   currentIndex = index;
-  document.querySelector('button[type="submit"]').textContent =
-    'Update Product';
+
+  elements.submitBtn.textContent = 'Update Product';
+  elements.submitBtn.classList.replace('btn-primary', 'btn-warning');
+
+  showMessage('info', 'Editing product. Make changes and click Update');
 }
 
 function deleteProduct(index) {
@@ -129,29 +227,133 @@ function deleteProduct(index) {
     products.splice(index, 1);
     saveToLocalStorage();
     displayProducts();
+    showMessage('success', 'Product deleted successfully!');
   }
 }
 
 function clearForm() {
   currentIndex = null;
-  inputs[0].value = '';
-  inputs[1].value = '';
-  inputs[2].value = '';
-  inputs[3].value = '';
-  productDescription.value = '';
-  document.querySelector('button[type="submit"]').textContent = 'Add Product';
+  elements.form.reset();
+
+  elements.inputs.forEach((input) => {
+    input.classList.remove('is-valid', 'is-invalid');
+  });
+
+  elements.submitBtn.textContent = 'Add Product';
+  elements.submitBtn.classList.replace('btn-warning', 'btn-primary');
+}
+
+function searchProducts() {
+  const query = elements.searchInput.value.toLowerCase().trim();
+
+  if (!query) {
+    displayProducts();
+    return;
+  }
+
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(query) ||
+      product.category.toLowerCase().includes(query) ||
+      (product.description && product.description.toLowerCase().includes(query))
+  );
+
+  displayFilteredProducts(filteredProducts, query);
+}
+
+function displayFilteredProducts(filteredProducts, query) {
+  if (filteredProducts.length === 0) {
+    elements.cards.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <i class="fa-solid fa-search fa-2x text-muted mb-3"></i>
+                <p class="text-muted">No products found for "${query}"</p>
+            </div>
+        `;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  const container = document.createElement('div');
+  container.className = 'row';
+
+  filteredProducts.forEach((product, index) => {
+    const card = createProductCard(product, index);
+    container.innerHTML += card;
+  });
+
+  fragment.appendChild(container);
+  elements.cards.innerHTML = '';
+  elements.cards.appendChild(fragment);
 }
 
 function saveToLocalStorage() {
-  localStorage.setItem('products', JSON.stringify(products));
+  try {
+    localStorage.setItem('products', JSON.stringify(products));
+  } catch (e) {
+    console.error('Storage error:', e);
+    showMessage('danger', 'Error saving products. Storage may be full.');
+  }
 }
 
 function loadFromLocalStorage() {
   try {
-    var storedProducts = localStorage.getItem('products');
-    return storedProducts ? JSON.parse(storedProducts) : [];
+    const stored = localStorage.getItem('products');
+    return stored ? JSON.parse(stored) : [];
   } catch (e) {
-    console.error('Error loading products:', e);
+    console.error('Load error:', e);
     return [];
   }
+}
+
+function createMessageElement() {
+  const div = document.createElement('div');
+  div.id = 'message';
+  div.className = 'position-fixed top-0 start-50 translate-middle-x mt-3 z-3';
+  div.style.zIndex = '1050';
+  document.body.appendChild(div);
+  return div;
+}
+
+function showMessage(type, text) {
+  const iconMap = {
+    success: 'fa-check',
+    warning: 'fa-exclamation-triangle',
+    danger: 'fa-times',
+    info: 'fa-info',
+  };
+
+  elements.message.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa-solid ${iconMap[type] || 'fa-info'} me-2"></i>
+            ${text}
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+
+  setTimeout(() => {
+    const alert = elements.message.querySelector('.alert');
+    if (alert) {
+      alert.classList.remove('show');
+      setTimeout(() => (elements.message.innerHTML = ''), 300);
+    }
+  }, 3000);
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+if (!document.querySelector('[data-fa-processed]')) {
+  const faScript = document.createElement('script');
+  faScript.src =
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js';
+  document.head.appendChild(faScript);
 }
