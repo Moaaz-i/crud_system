@@ -8,7 +8,7 @@ var currentIndex = null;
 displayProducts();
 
 function validateProductForm(inputs, productDescription) {
-  const nameValid = /^[a-zA-Z0-9_-]{3,16}$/;
+  const nameValid = /^[a-zA-Z0-9_\-\s]{3,16}$/;
   const priceValid = /^\d+(\.\d{1,2})?$/;
   const categoryValid = /^[a-zA-Z\s]{3,20}$/;
   const descriptionValid = /^.{0,200}$/;
